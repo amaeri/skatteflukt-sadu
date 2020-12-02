@@ -1,0 +1,3 @@
+body{margin:0;padding:0;box-sizing:border-box}main.svelte-1q4hh4y{display:grid;place-items:center;text-align:center;margin:0 auto}.container.svelte-1q4hh4y{display:grid;grid-template-columns:1fr 1fr 1fr;place-items:center;background-color:lightgrey;width:900px;height:700px}.kort.svelte-1q4hh4y{padding:1rem;border-radius:10px;width:200px;height:300px}.card_open.svelte-1q4hh4y,.card_closed.svelte-1q4hh4y{display:grid;place-items:center;width:100%;height:100%}.card_closed.svelte-1q4hh4y{font-weight:700}#bedriftskort.svelte-1q4hh4y{background:#FEF445}#skattekort.svelte-1q4hh4y{background:#CEE741}#sabotasjekort.svelte-1q4hh4y{background:#F24726}
+
+/*# sourceMappingURL=bundle.css.map */
