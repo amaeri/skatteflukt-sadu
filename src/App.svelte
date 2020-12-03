@@ -7,52 +7,46 @@
 	let taxCard = false
 	let saboCard = false
 
-	let openCompanyCards
-	const getCompanyCards = () => {
-		openCompanyCards = companyCards.results
+	let openTaxCards
+	const getTaxCards = () => {
+		openTaxCards = taxCards.results
 	}
-	getCompanyCards()
+	getTaxCards()
 
 </script>
 
 <main>
 	<div class="container">
 
-		<div class="kort" id="bedriftskort">
+		<div class="kort">
 			{#if !companyCard}
-				<div class="card_closed" on:click={ () => companyCard = true}>
-					<p>Bedriftskort</p>
+				<div id="company_closed" class="card_closed" on:click={ () => companyCard = true}>
 				</div>
 			{:else}
 				<div class="card_open" on:click={ () => companyCard = false}>
-					{#each openCompanyCards as openCompanyCard}
-						<img src="{openCompanyCard.icon}" alt="{openCompanyCard.company}">
-						<p>{openCompanyCard.text}</p>
-					{/each}
 				</div>
 			{/if}
 		</div>
 
 		<div class="kort" id="skattekort">
 			{#if !taxCard}
-				<div class="card_closed" on:click={ () => taxCard = true}>
-					<p>Skattekort</p>
+				<div id="tax_closed" class="card_closed" on:click={ () => taxCard = true}>
 				</div>
 			{:else}
 				<div class="card_open" on:click={ () => taxCard = false}>
-					<p>Banan AS har sluttet å skatte i landet ditt. Du mister fremtidige månedlige skatteinntekter</p>
+					{#each openTaxCards as openTaxCard}
+						<img src="{openTaxCard.tax}" alt="skattekort">
+					{/each}
 				</div>
 			{/if}
 		</div>
 
 		<div class="kort" id="sabotasjekort">
 			{#if !saboCard}
-				<div class="card_closed" on:click={ () => saboCard = true}>
-					<p>Sabotasjekort</p>
+				<div id="sabo_closed" class="card_closed" on:click={ () => saboCard = true}>
 				</div>
 			{:else}
 				<div class="card_open" on:click={ () => saboCard = false}>
-					<p>Du kan sabotere en medspiller ved å stjele 500 i skatt</p>
 				</div>
 			{/if}
 		</div>
@@ -78,7 +72,6 @@
 		display: grid;
 		grid-template-columns: 1fr 1fr 1fr;
 		place-items: center;
-		background-color: lightgrey;
 		width: 900px;
 		height: 700px;
 	}
@@ -90,26 +83,22 @@
 		height: 300px;
 	}
 
-	.card_open,
-	.card_closed {
-		display: grid;
-		place-items: center;
+	.card_closed,
+	.card_open {
 		width: 100%;
 		height: 100%;
+		background-size: contain;
 	}
 
-	.card_closed {
-		font-weight: 700;
+	.card_open img {
+		width: 100%;
+		height: 100%;
+		background-size: contain;
 	}
-	#bedriftskort {
-		background: #FEF445;
+	
+
+	#tax_closed {
+		background-image: url("../img/skatt_front.png");
 	}
 
-	#skattekort {
-		background: #CEE741;
-	}
-
-	#sabotasjekort {
-		background: #F24726;
-	}
 </style>

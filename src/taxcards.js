@@ -1,8 +1,10 @@
 let taxCards = {
     "results": [
         {
-            //"icon":
-            //"text":
+            tax: "./img/skatt_avokado1.png"
+        },
+        {
+            tax: "./img/skatt_avokado2.png"
         }
     ]
 }

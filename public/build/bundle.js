@@ -289,13 +289,6 @@ var app = (function () {
         else
             dispatch_dev("SvelteDOMSetAttribute", { node, attribute, value });
     }
-    function set_data_dev(text, data) {
-        data = '' + data;
-        if (text.data === data)
-            return;
-        dispatch_dev("SvelteDOMSetData", { node: text, data });
-        text.data = data;
-    }
     function validate_each_argument(arg) {
         if (typeof arg !== 'string' && !(arg && typeof arg === 'object' && 'length' in arg)) {
             let msg = '{#each} only iterates over array-like objects.';
@@ -340,8 +333,10 @@ var app = (function () {
     let taxCards = {
         "results": [
             {
-                //"icon":
-                //"text":
+                tax: "./img/skatt_avokado1.png"
+            },
+            {
+                tax: "./img/skatt_avokado2.png"
             }
         ]
     };
@@ -364,11 +359,78 @@ var app = (function () {
     	return child_ctx;
     }
 
-    // (26:3) {:else}
+    // (25:3) {:else}
     function create_else_block_2(ctx) {
     	let div;
     	let dispose;
-    	let each_value = /*openCompanyCards*/ ctx[3];
+
+    	const block = {
+    		c: function create() {
+    			div = element("div");
+    			attr_dev(div, "class", "card_open svelte-krlxrx");
+    			add_location(div, file, 25, 4, 503);
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, div, anchor);
+    			dispose = listen_dev(div, "click", /*click_handler_1*/ ctx[6], false, false, false);
+    		},
+    		p: noop,
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(div);
+    			dispose();
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_else_block_2.name,
+    		type: "else",
+    		source: "(25:3) {:else}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (22:3) {#if !companyCard}
+    function create_if_block_2(ctx) {
+    	let div;
+    	let dispose;
+
+    	const block = {
+    		c: function create() {
+    			div = element("div");
+    			attr_dev(div, "id", "company_closed");
+    			attr_dev(div, "class", "card_closed svelte-krlxrx");
+    			add_location(div, file, 22, 4, 394);
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, div, anchor);
+    			dispose = listen_dev(div, "click", /*click_handler*/ ctx[5], false, false, false);
+    		},
+    		p: noop,
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(div);
+    			dispose();
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_if_block_2.name,
+    		type: "if",
+    		source: "(22:3) {#if !companyCard}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (35:3) {:else}
+    function create_else_block_1(ctx) {
+    	let div;
+    	let dispose;
+    	let each_value = /*openTaxCards*/ ctx[3];
     	validate_each_argument(each_value);
     	let each_blocks = [];
 
@@ -384,8 +446,8 @@ var app = (function () {
     				each_blocks[i].c();
     			}
 
-    			attr_dev(div, "class", "card_open svelte-1q4hh4y");
-    			add_location(div, file, 26, 4, 546);
+    			attr_dev(div, "class", "card_open svelte-krlxrx");
+    			add_location(div, file, 35, 4, 755);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div, anchor);
@@ -394,11 +456,11 @@ var app = (function () {
     				each_blocks[i].m(div, null);
     			}
 
-    			dispose = listen_dev(div, "click", /*click_handler_1*/ ctx[6], false, false, false);
+    			dispose = listen_dev(div, "click", /*click_handler_3*/ ctx[8], false, false, false);
     		},
     		p: function update(ctx, dirty) {
-    			if (dirty & /*openCompanyCards*/ 8) {
-    				each_value = /*openCompanyCards*/ ctx[3];
+    			if (dirty & /*openTaxCards*/ 8) {
+    				each_value = /*openTaxCards*/ ctx[3];
     				validate_each_argument(each_value);
     				let i;
 
@@ -430,165 +492,29 @@ var app = (function () {
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_else_block_2.name,
-    		type: "else",
-    		source: "(26:3) {:else}",
-    		ctx
-    	});
-
-    	return block;
-    }
-
-    // (22:3) {#if !companyCard}
-    function create_if_block_2(ctx) {
-    	let div;
-    	let p;
-    	let dispose;
-
-    	const block = {
-    		c: function create() {
-    			div = element("div");
-    			p = element("p");
-    			p.textContent = "Bedriftskort";
-    			add_location(p, file, 23, 5, 500);
-    			attr_dev(div, "class", "card_closed svelte-1q4hh4y");
-    			add_location(div, file, 22, 4, 432);
-    		},
-    		m: function mount(target, anchor) {
-    			insert_dev(target, div, anchor);
-    			append_dev(div, p);
-    			dispose = listen_dev(div, "click", /*click_handler*/ ctx[5], false, false, false);
-    		},
-    		p: noop,
-    		d: function destroy(detaching) {
-    			if (detaching) detach_dev(div);
-    			dispose();
-    		}
-    	};
-
-    	dispatch_dev("SvelteRegisterBlock", {
-    		block,
-    		id: create_if_block_2.name,
-    		type: "if",
-    		source: "(22:3) {#if !companyCard}",
-    		ctx
-    	});
-
-    	return block;
-    }
-
-    // (28:5) {#each openCompanyCards as openCompanyCard}
-    function create_each_block(ctx) {
-    	let img;
-    	let img_src_value;
-    	let img_alt_value;
-    	let t0;
-    	let p;
-    	let t1_value = /*openCompanyCard*/ ctx[11].text + "";
-    	let t1;
-
-    	const block = {
-    		c: function create() {
-    			img = element("img");
-    			t0 = space();
-    			p = element("p");
-    			t1 = text(t1_value);
-    			if (img.src !== (img_src_value = /*openCompanyCard*/ ctx[11].icon)) attr_dev(img, "src", img_src_value);
-    			attr_dev(img, "alt", img_alt_value = /*openCompanyCard*/ ctx[11].company);
-    			add_location(img, file, 28, 6, 663);
-    			add_location(p, file, 29, 6, 736);
-    		},
-    		m: function mount(target, anchor) {
-    			insert_dev(target, img, anchor);
-    			insert_dev(target, t0, anchor);
-    			insert_dev(target, p, anchor);
-    			append_dev(p, t1);
-    		},
-    		p: function update(ctx, dirty) {
-    			if (dirty & /*openCompanyCards*/ 8 && img.src !== (img_src_value = /*openCompanyCard*/ ctx[11].icon)) {
-    				attr_dev(img, "src", img_src_value);
-    			}
-
-    			if (dirty & /*openCompanyCards*/ 8 && img_alt_value !== (img_alt_value = /*openCompanyCard*/ ctx[11].company)) {
-    				attr_dev(img, "alt", img_alt_value);
-    			}
-
-    			if (dirty & /*openCompanyCards*/ 8 && t1_value !== (t1_value = /*openCompanyCard*/ ctx[11].text + "")) set_data_dev(t1, t1_value);
-    		},
-    		d: function destroy(detaching) {
-    			if (detaching) detach_dev(img);
-    			if (detaching) detach_dev(t0);
-    			if (detaching) detach_dev(p);
-    		}
-    	};
-
-    	dispatch_dev("SvelteRegisterBlock", {
-    		block,
-    		id: create_each_block.name,
-    		type: "each",
-    		source: "(28:5) {#each openCompanyCards as openCompanyCard}",
-    		ctx
-    	});
-
-    	return block;
-    }
-
-    // (41:3) {:else}
-    function create_else_block_1(ctx) {
-    	let div;
-    	let p;
-    	let dispose;
-
-    	const block = {
-    		c: function create() {
-    			div = element("div");
-    			p = element("p");
-    			p.textContent = "Banan AS har sluttet å skatte i landet ditt. Du mister fremtidige månedlige skatteinntekter";
-    			add_location(p, file, 42, 5, 1039);
-    			attr_dev(div, "class", "card_open svelte-1q4hh4y");
-    			add_location(div, file, 41, 4, 976);
-    		},
-    		m: function mount(target, anchor) {
-    			insert_dev(target, div, anchor);
-    			append_dev(div, p);
-    			dispose = listen_dev(div, "click", /*click_handler_3*/ ctx[8], false, false, false);
-    		},
-    		p: noop,
-    		d: function destroy(detaching) {
-    			if (detaching) detach_dev(div);
-    			dispose();
-    		}
-    	};
-
-    	dispatch_dev("SvelteRegisterBlock", {
-    		block,
     		id: create_else_block_1.name,
     		type: "else",
-    		source: "(41:3) {:else}",
+    		source: "(35:3) {:else}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (37:3) {#if !taxCard}
+    // (32:3) {#if !taxCard}
     function create_if_block_1(ctx) {
     	let div;
-    	let p;
     	let dispose;
 
     	const block = {
     		c: function create() {
     			div = element("div");
-    			p = element("p");
-    			p.textContent = "Skattekort";
-    			add_location(p, file, 38, 5, 932);
-    			attr_dev(div, "class", "card_closed svelte-1q4hh4y");
-    			add_location(div, file, 37, 4, 868);
+    			attr_dev(div, "id", "tax_closed");
+    			attr_dev(div, "class", "card_closed svelte-krlxrx");
+    			add_location(div, file, 32, 4, 654);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div, anchor);
-    			append_dev(div, p);
     			dispose = listen_dev(div, "click", /*click_handler_2*/ ctx[7], false, false, false);
     		},
     		p: noop,
@@ -602,31 +528,63 @@ var app = (function () {
     		block,
     		id: create_if_block_1.name,
     		type: "if",
-    		source: "(37:3) {#if !taxCard}",
+    		source: "(32:3) {#if !taxCard}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (53:3) {:else}
+    // (37:5) {#each openTaxCards as openTaxCard}
+    function create_each_block(ctx) {
+    	let img;
+    	let img_src_value;
+
+    	const block = {
+    		c: function create() {
+    			img = element("img");
+    			if (img.src !== (img_src_value = /*openTaxCard*/ ctx[11].tax)) attr_dev(img, "src", img_src_value);
+    			attr_dev(img, "alt", "skattekort");
+    			attr_dev(img, "class", "svelte-krlxrx");
+    			add_location(img, file, 37, 6, 860);
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, img, anchor);
+    		},
+    		p: function update(ctx, dirty) {
+    			if (dirty & /*openTaxCards*/ 8 && img.src !== (img_src_value = /*openTaxCard*/ ctx[11].tax)) {
+    				attr_dev(img, "src", img_src_value);
+    			}
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(img);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_each_block.name,
+    		type: "each",
+    		source: "(37:5) {#each openTaxCards as openTaxCard}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (48:3) {:else}
     function create_else_block(ctx) {
     	let div;
-    	let p;
     	let dispose;
 
     	const block = {
     		c: function create() {
     			div = element("div");
-    			p = element("p");
-    			p.textContent = "Du kan sabotere en medspiller ved å stjele 500 i skatt";
-    			add_location(p, file, 54, 5, 1407);
-    			attr_dev(div, "class", "card_open svelte-1q4hh4y");
-    			add_location(div, file, 53, 4, 1343);
+    			attr_dev(div, "class", "card_open svelte-krlxrx");
+    			add_location(div, file, 48, 4, 1116);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div, anchor);
-    			append_dev(div, p);
     			dispose = listen_dev(div, "click", /*click_handler_5*/ ctx[10], false, false, false);
     		},
     		p: noop,
@@ -640,31 +598,27 @@ var app = (function () {
     		block,
     		id: create_else_block.name,
     		type: "else",
-    		source: "(53:3) {:else}",
+    		source: "(48:3) {:else}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (49:3) {#if !saboCard}
+    // (45:3) {#if !saboCard}
     function create_if_block(ctx) {
     	let div;
-    	let p;
     	let dispose;
 
     	const block = {
     		c: function create() {
     			div = element("div");
-    			p = element("p");
-    			p.textContent = "Sabotasjekort";
-    			add_location(p, file, 50, 5, 1296);
-    			attr_dev(div, "class", "card_closed svelte-1q4hh4y");
-    			add_location(div, file, 49, 4, 1231);
+    			attr_dev(div, "id", "sabo_closed");
+    			attr_dev(div, "class", "card_closed svelte-krlxrx");
+    			add_location(div, file, 45, 4, 1013);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div, anchor);
-    			append_dev(div, p);
     			dispose = listen_dev(div, "click", /*click_handler_4*/ ctx[9], false, false, false);
     		},
     		p: noop,
@@ -678,7 +632,7 @@ var app = (function () {
     		block,
     		id: create_if_block.name,
     		type: "if",
-    		source: "(49:3) {#if !saboCard}",
+    		source: "(45:3) {#if !saboCard}",
     		ctx
     	});
 
@@ -730,19 +684,18 @@ var app = (function () {
     			t1 = space();
     			div2 = element("div");
     			if_block2.c();
-    			attr_dev(div0, "class", "kort svelte-1q4hh4y");
-    			attr_dev(div0, "id", "bedriftskort");
-    			add_location(div0, file, 20, 2, 369);
-    			attr_dev(div1, "class", "kort svelte-1q4hh4y");
+    			attr_dev(div0, "class", "kort svelte-krlxrx");
+    			add_location(div0, file, 20, 2, 349);
+    			attr_dev(div1, "class", "kort svelte-krlxrx");
     			attr_dev(div1, "id", "skattekort");
-    			add_location(div1, file, 35, 2, 811);
-    			attr_dev(div2, "class", "kort svelte-1q4hh4y");
+    			add_location(div1, file, 30, 2, 597);
+    			attr_dev(div2, "class", "kort svelte-krlxrx");
     			attr_dev(div2, "id", "sabotasjekort");
-    			add_location(div2, file, 47, 2, 1170);
-    			attr_dev(div3, "class", "container svelte-1q4hh4y");
-    			add_location(div3, file, 18, 1, 342);
-    			attr_dev(main, "class", "svelte-1q4hh4y");
-    			add_location(main, file, 17, 0, 334);
+    			add_location(div2, file, 43, 2, 952);
+    			attr_dev(div3, "class", "container svelte-krlxrx");
+    			add_location(div3, file, 18, 1, 322);
+    			attr_dev(main, "class", "svelte-krlxrx");
+    			add_location(main, file, 17, 0, 314);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -821,13 +774,13 @@ var app = (function () {
     	let companyCard = false;
     	let taxCard = false;
     	let saboCard = false;
-    	let openCompanyCards;
+    	let openTaxCards;
 
-    	const getCompanyCards = () => {
-    		$$invalidate(3, openCompanyCards = companyCards.results);
+    	const getTaxCards = () => {
+    		$$invalidate(3, openTaxCards = taxCards.results);
     	};
 
-    	getCompanyCards();
+    	getTaxCards();
     	const click_handler = () => $$invalidate(0, companyCard = true);
     	const click_handler_1 = () => $$invalidate(0, companyCard = false);
     	const click_handler_2 = () => $$invalidate(1, taxCard = true);
@@ -842,15 +795,15 @@ var app = (function () {
     		companyCard,
     		taxCard,
     		saboCard,
-    		openCompanyCards,
-    		getCompanyCards
+    		openTaxCards,
+    		getTaxCards
     	});
 
     	$$self.$inject_state = $$props => {
     		if ("companyCard" in $$props) $$invalidate(0, companyCard = $$props.companyCard);
     		if ("taxCard" in $$props) $$invalidate(1, taxCard = $$props.taxCard);
     		if ("saboCard" in $$props) $$invalidate(2, saboCard = $$props.saboCard);
-    		if ("openCompanyCards" in $$props) $$invalidate(3, openCompanyCards = $$props.openCompanyCards);
+    		if ("openTaxCards" in $$props) $$invalidate(3, openTaxCards = $$props.openTaxCards);
     	};
 
     	if ($$props && "$$inject" in $$props) {
@@ -861,8 +814,8 @@ var app = (function () {
     		companyCard,
     		taxCard,
     		saboCard,
-    		openCompanyCards,
-    		getCompanyCards,
+    		openTaxCards,
+    		getTaxCards,
     		click_handler,
     		click_handler_1,
     		click_handler_2,
