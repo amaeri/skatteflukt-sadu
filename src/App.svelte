@@ -1,20 +1,44 @@
 <script>
-	import companyCards from "./companycards.js"
-	import taxCards from "./taxcards.js"
-	import saboCards from "./sabocards.js"
+	import compList from "./companycards.js"
+	import taxList from "./taxcards.js"
+	import saboList from "./sabocards.js"
 
 	let companyCard = false
 	let taxCard = false
 	let saboCard = false
 
-	const getTaxCards = () => {
-		let openTaxCards = Math.round(Math.random() * (taxCards.length - 1))
-		let taxcard = taxCards[openTaxCards]
+	let cardComp = 0
+	let cardTax = 0
+	let cardSabo = 0
+
+	const pickCompCard = () => {
+		let randomCompCard = Math.round(Math.random() * (compList.length - 1))
+		cardComp = compList[randomCompCard]
+	}
+
+	const pickTaxCard = () => {
+		let randomTaxCard = Math.round(Math.random() * (taxList.length - 1))
+		cardTax = taxList[randomTaxCard]
+	}
+
+	const pickSaboCard = () => {
+		let randomSaboCard = Math.round(Math.random() * (saboList.length - 1))
+		cardSabo = saboList[randomSaboCard]
+	}
+
+	const pushCompCards = () => {
+		if(companyCard = true)
+			pickCompCard()
 	}
 
 	const pushTaxCards = () => {
 		if(taxCard = true)
-			getTaxCards()
+			pickTaxCard()
+	}
+
+	const pushSaboCards = () => {
+		if(saboCard = true)
+			pickSaboCard()
 	}
 
 </script>
@@ -22,36 +46,38 @@
 <main>
 	<div class="container">
 
-		<!-- <div class="kort">
+		<div class="card company flipped">
 			{#if !companyCard}
-				<div id="company_closed" class="card_closed" on:click={ () => companyCard = true}>
+				<div class="face front" on:click={ () => pushCompCards()}>
 				</div>
 			{:else}
-				<div class="card_open" on:click={ () => companyCard = false}>
-				</div>
-			{/if}
-		</div> -->
-
-		<div class="taxcard">
-			{#if !taxCard}
-				<div class="closed size" on:click={ () => pushTaxCards()}>
-				</div>
-			{:else}
-				<div class="open size" on:click={ () => taxCard = false}>
-						<img src="{taxCards.image}" alt="{taxCards.title}">
+				<div class="face back" on:click={ () => companyCard = false}>
+					<img src="{cardComp.image}" alt="Bedriftskort">
 				</div>
 			{/if}
 		</div>
 
-		<!-- <div class="kort" id="sabotasjekort">
-			{#if !saboCard}
-				<div id="sabo_closed" class="card_closed" on:click={ () => saboCard = true}>
+		<div class="card tax flipped">
+			{#if !taxCard}
+				<div class="face front" on:click={ () => pushTaxCards()}>
 				</div>
 			{:else}
-				<div class="card_open" on:click={ () => saboCard = false}>
+				<div class="face back" on:click={ () => taxCard = false}>
+					<img src="{cardTax.image}" alt="Skattekort">
 				</div>
 			{/if}
-		</div> -->
+		</div>
+
+		<div class="card sabo flipped">
+			{#if !saboCard}
+				<div class="face front" on:click={ () => pushSaboCards()}>
+				</div>
+			{:else}
+				<div class="face back" on:click={ () => saboCard = false}>
+					<img src="{cardSabo.image}" alt="Sabotasjekort">
+				</div>
+			{/if}
+		</div>
 
 	</div>
 </main>
@@ -76,35 +102,54 @@
 		place-items: center;
 		width: 900px;
 		height: 700px;
+		perspective: 600px;
 	}
 
-	.taxcard {
-		padding: 1rem;
-		border-radius: 10px;
+	.card {
 		width: 200px;
 		height: 300px;
+		cursor: pointer;
+		position: relative;
+		transition: transform 1s;
+		transform-style: preserve-3d;
 	}
 
-	/* .tax-card .open .closed {
+	.card .face {
+		position: absolute;
 		width: 100%;
 		height: 100%;
 		background-size: contain;
+		backface-visibility: hidden;
+	}
+
+	.card .face img {
+		width: 100%;
+		height: 100%;
+	}
+
+	.card .face.front {
+		z-index: 1;
+	}
+
+	/* .card .face.back {
+		transform: rotateY(180deg);
+		z-index: 0;
+	}
+
+	.card.flipped {
+		transform: rotateY(180deg);
 	} */
 
-	.size {
-		width: 100%;
-		height: 100%;
-		background-size: contain;
+	.company .front {
+		background-image: url("../img/bed_front.png");
 	}
 
-	.size img {
-		width: 100%;
-		height: 100%;
-		background-size: contain;
-	}
-
-	.taxcard .closed {
+	.tax .front {
 		background-image: url("../img/skatt_front.png");
+	}
+
+	.sabo .front {
+		background-image: url("../img/sabo_front.png");
 	}
 
 </style>
