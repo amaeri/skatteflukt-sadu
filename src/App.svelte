@@ -7,18 +7,22 @@
 	let taxCard = false
 	let saboCard = false
 
-	let openTaxCards
 	const getTaxCards = () => {
-		openTaxCards = taxCards.results
+		let openTaxCards = Math.round(Math.random() * (taxCards.length - 1))
+		let taxcard = taxCards[openTaxCards]
 	}
-	getTaxCards()
+
+	const pushTaxCards = () => {
+		if(taxCard = true)
+			getTaxCards()
+	}
 
 </script>
 
 <main>
 	<div class="container">
 
-		<div class="kort">
+		<!-- <div class="kort">
 			{#if !companyCard}
 				<div id="company_closed" class="card_closed" on:click={ () => companyCard = true}>
 				</div>
@@ -26,22 +30,20 @@
 				<div class="card_open" on:click={ () => companyCard = false}>
 				</div>
 			{/if}
-		</div>
+		</div> -->
 
-		<div class="kort" id="skattekort">
+		<div class="taxcard">
 			{#if !taxCard}
-				<div id="tax_closed" class="card_closed" on:click={ () => taxCard = true}>
+				<div class="closed size" on:click={ () => pushTaxCards()}>
 				</div>
 			{:else}
-				<div class="card_open" on:click={ () => taxCard = false}>
-					{#each openTaxCards as openTaxCard}
-						<img src="{openTaxCard.tax}" alt="skattekort">
-					{/each}
+				<div class="open size" on:click={ () => taxCard = false}>
+						<img src="{taxCards.image}" alt="{taxCards.title}">
 				</div>
 			{/if}
 		</div>
 
-		<div class="kort" id="sabotasjekort">
+		<!-- <div class="kort" id="sabotasjekort">
 			{#if !saboCard}
 				<div id="sabo_closed" class="card_closed" on:click={ () => saboCard = true}>
 				</div>
@@ -49,7 +51,7 @@
 				<div class="card_open" on:click={ () => saboCard = false}>
 				</div>
 			{/if}
-		</div>
+		</div> -->
 
 	</div>
 </main>
@@ -76,28 +78,32 @@
 		height: 700px;
 	}
 
-	.kort {
+	.taxcard {
 		padding: 1rem;
 		border-radius: 10px;
 		width: 200px;
 		height: 300px;
 	}
 
-	.card_closed,
-	.card_open {
+	/* .tax-card .open .closed {
+		width: 100%;
+		height: 100%;
+		background-size: contain;
+	} */
+
+	.size {
 		width: 100%;
 		height: 100%;
 		background-size: contain;
 	}
 
-	.card_open img {
+	.size img {
 		width: 100%;
 		height: 100%;
 		background-size: contain;
 	}
-	
 
-	#tax_closed {
+	.taxcard .closed {
 		background-image: url("../img/skatt_front.png");
 	}
 
