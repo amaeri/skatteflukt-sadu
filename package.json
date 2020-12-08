@@ -1,6 +1,6 @@
 {
-  "name": "skatte-electron-forge",
-  "productName": "Skatteflukt, sa du!?!",
+  "name": "skatte-jaget",
+  "productName": "Skattejaget",
   "version": "1.0.0",
   "description": "Svelte + Electron Forge",
   "main": "src/index.js",

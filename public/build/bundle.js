@@ -4,6 +4,7 @@ var app = (function () {
     'use strict';
 
     function noop() { }
+    const identity = x => x;
     function add_location(element, file, line, column, char) {
         element.__svelte_meta = {
             loc: { file, line, column, char }
@@ -23,6 +24,41 @@ var app = (function () {
     }
     function safe_not_equal(a, b) {
         return a != a ? b == b : a !== b || ((a && typeof a === 'object') || typeof a === 'function');
+    }
+
+    const is_client = typeof window !== 'undefined';
+    let now = is_client
+        ? () => window.performance.now()
+        : () => Date.now();
+    let raf = is_client ? cb => requestAnimationFrame(cb) : noop;
+
+    const tasks = new Set();
+    function run_tasks(now) {
+        tasks.forEach(task => {
+            if (!task.c(now)) {
+                tasks.delete(task);
+                task.f();
+            }
+        });
+        if (tasks.size !== 0)
+            raf(run_tasks);
+    }
+    /**
+     * Creates a new task that runs on each raf frame
+     * until it returns a falsy value or is aborted
+     */
+    function loop(callback) {
+        let task;
+        if (tasks.size === 0)
+            raf(run_tasks);
+        return {
+            promise: new Promise(fulfill => {
+                tasks.add(task = { c: callback, f: fulfill });
+            }),
+            abort() {
+                tasks.delete(task);
+            }
+        };
     }
 
     function append(target, node) {
@@ -56,10 +92,69 @@ var app = (function () {
     function children(element) {
         return Array.from(element.childNodes);
     }
+    function toggle_class(element, name, toggle) {
+        element.classList[toggle ? 'add' : 'remove'](name);
+    }
     function custom_event(type, detail) {
         const e = document.createEvent('CustomEvent');
         e.initCustomEvent(type, false, false, detail);
         return e;
+    }
+
+    let stylesheet;
+    let active = 0;
+    let current_rules = {};
+    // https://github.com/darkskyapp/string-hash/blob/master/index.js
+    function hash(str) {
+        let hash = 5381;
+        let i = str.length;
+        while (i--)
+            hash = ((hash << 5) - hash) ^ str.charCodeAt(i);
+        return hash >>> 0;
+    }
+    function create_rule(node, a, b, duration, delay, ease, fn, uid = 0) {
+        const step = 16.666 / duration;
+        let keyframes = '{\n';
+        for (let p = 0; p <= 1; p += step) {
+            const t = a + (b - a) * ease(p);
+            keyframes += p * 100 + `%{${fn(t, 1 - t)}}\n`;
+        }
+        const rule = keyframes + `100% {${fn(b, 1 - b)}}\n}`;
+        const name = `__svelte_${hash(rule)}_${uid}`;
+        if (!current_rules[name]) {
+            if (!stylesheet) {
+                const style = element('style');
+                document.head.appendChild(style);
+                stylesheet = style.sheet;
+            }
+            current_rules[name] = true;
+            stylesheet.insertRule(`@keyframes ${name} ${rule}`, stylesheet.cssRules.length);
+        }
+        const animation = node.style.animation || '';
+        node.style.animation = `${animation ? `${animation}, ` : ``}${name} ${duration}ms linear ${delay}ms 1 both`;
+        active += 1;
+        return name;
+    }
+    function delete_rule(node, name) {
+        node.style.animation = (node.style.animation || '')
+            .split(', ')
+            .filter(name
+            ? anim => anim.indexOf(name) < 0 // remove specific animation
+            : anim => anim.indexOf('__svelte') === -1 // remove all Svelte animations
+        )
+            .join(', ');
+        if (name && !--active)
+            clear_rules();
+    }
+    function clear_rules() {
+        raf(() => {
+            if (active)
+                return;
+            let i = stylesheet.cssRules.length;
+            while (i--)
+                stylesheet.deleteRule(i);
+            current_rules = {};
+        });
     }
 
     let current_component;
@@ -129,12 +224,162 @@ var app = (function () {
             $$.after_update.forEach(add_render_callback);
         }
     }
+
+    let promise;
+    function wait() {
+        if (!promise) {
+            promise = Promise.resolve();
+            promise.then(() => {
+                promise = null;
+            });
+        }
+        return promise;
+    }
+    function dispatch(node, direction, kind) {
+        node.dispatchEvent(custom_event(`${direction ? 'intro' : 'outro'}${kind}`));
+    }
     const outroing = new Set();
+    let outros;
+    function group_outros() {
+        outros = {
+            r: 0,
+            c: [],
+            p: outros // parent group
+        };
+    }
+    function check_outros() {
+        if (!outros.r) {
+            run_all(outros.c);
+        }
+        outros = outros.p;
+    }
     function transition_in(block, local) {
         if (block && block.i) {
             outroing.delete(block);
             block.i(local);
         }
+    }
+    function transition_out(block, local, detach, callback) {
+        if (block && block.o) {
+            if (outroing.has(block))
+                return;
+            outroing.add(block);
+            outros.c.push(() => {
+                outroing.delete(block);
+                if (callback) {
+                    if (detach)
+                        block.d(1);
+                    callback();
+                }
+            });
+            block.o(local);
+        }
+    }
+    const null_transition = { duration: 0 };
+    function create_bidirectional_transition(node, fn, params, intro) {
+        let config = fn(node, params);
+        let t = intro ? 0 : 1;
+        let running_program = null;
+        let pending_program = null;
+        let animation_name = null;
+        function clear_animation() {
+            if (animation_name)
+                delete_rule(node, animation_name);
+        }
+        function init(program, duration) {
+            const d = program.b - t;
+            duration *= Math.abs(d);
+            return {
+                a: t,
+                b: program.b,
+                d,
+                duration,
+                start: program.start,
+                end: program.start + duration,
+                group: program.group
+            };
+        }
+        function go(b) {
+            const { delay = 0, duration = 300, easing = identity, tick = noop, css } = config || null_transition;
+            const program = {
+                start: now() + delay,
+                b
+            };
+            if (!b) {
+                // @ts-ignore todo: improve typings
+                program.group = outros;
+                outros.r += 1;
+            }
+            if (running_program) {
+                pending_program = program;
+            }
+            else {
+                // if this is an intro, and there's a delay, we need to do
+                // an initial tick and/or apply CSS animation immediately
+                if (css) {
+                    clear_animation();
+                    animation_name = create_rule(node, t, b, duration, delay, easing, css);
+                }
+                if (b)
+                    tick(0, 1);
+                running_program = init(program, duration);
+                add_render_callback(() => dispatch(node, b, 'start'));
+                loop(now => {
+                    if (pending_program && now > pending_program.start) {
+                        running_program = init(pending_program, duration);
+                        pending_program = null;
+                        dispatch(node, running_program.b, 'start');
+                        if (css) {
+                            clear_animation();
+                            animation_name = create_rule(node, t, running_program.b, running_program.duration, 0, easing, config.css);
+                        }
+                    }
+                    if (running_program) {
+                        if (now >= running_program.end) {
+                            tick(t = running_program.b, 1 - t);
+                            dispatch(node, running_program.b, 'end');
+                            if (!pending_program) {
+                                // we're done
+                                if (running_program.b) {
+                                    // intro — we can tidy up immediately
+                                    clear_animation();
+                                }
+                                else {
+                                    // outro — needs to be coordinated
+                                    if (!--running_program.group.r)
+                                        run_all(running_program.group.c);
+                                }
+                            }
+                            running_program = null;
+                        }
+                        else if (now >= running_program.start) {
+                            const p = now - running_program.start;
+                            t = running_program.a + running_program.d * easing(p / running_program.duration);
+                            tick(t, 1 - t);
+                        }
+                    }
+                    return !!(running_program || pending_program);
+                });
+            }
+        }
+        return {
+            run(b) {
+                if (is_function(config)) {
+                    wait().then(() => {
+                        // @ts-ignore
+                        config = config();
+                        go(b);
+                    });
+                }
+                else {
+                    go(b);
+                }
+            },
+            end() {
+                clear_animation();
+                running_program = pending_program = null;
+            }
+        };
     }
     function mount_component(component, target, anchor) {
         const { fragment, on_mount, on_destroy, after_update } = component.$$;
@@ -469,14 +714,36 @@ var app = (function () {
             }
         ];
 
+    function cubicOut(t) {
+        const f = t - 1.0;
+        return f * f * f + 1.0;
+    }
+
+    function fly(node, { delay = 0, duration = 400, easing = cubicOut, x = 0, y = 0, opacity = 0 }) {
+        const style = getComputedStyle(node);
+        const target_opacity = +style.opacity;
+        const transform = style.transform === 'none' ? '' : style.transform;
+        const od = target_opacity * (1 - opacity);
+        return {
+            delay,
+            duration,
+            easing,
+            css: (t, u) => `
+			transform: ${transform} translate(${(1 - t) * x}px, ${(1 - t) * y}px);
+			opacity: ${target_opacity - (od * u)}`
+        };
+    }
+
     /* src/App.svelte generated by Svelte v3.19.1 */
     const file = "src/App.svelte";
 
-    // (63:3) {:else}
+    // (86:3) {:else}
     function create_else_block_2(ctx) {
     	let div;
     	let img;
     	let img_src_value;
+    	let div_transition;
+    	let current;
     	let dispose;
 
     	const block = {
@@ -485,23 +752,40 @@ var app = (function () {
     			img = element("img");
     			if (img.src !== (img_src_value = /*cardComp*/ ctx[3].image)) attr_dev(img, "src", img_src_value);
     			attr_dev(img, "alt", "Bedriftskort");
-    			attr_dev(img, "class", "svelte-fp05x4");
-    			add_location(img, file, 64, 5, 1336);
-    			attr_dev(div, "class", "face back svelte-fp05x4");
-    			add_location(div, file, 63, 4, 1269);
+    			attr_dev(img, "class", "svelte-1cgphth");
+    			add_location(img, file, 87, 5, 1703);
+    			attr_dev(div, "class", "face back svelte-1cgphth");
+    			add_location(div, file, 86, 4, 1620);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div, anchor);
     			append_dev(div, img);
-    			dispose = listen_dev(div, "click", /*click_handler_1*/ ctx[14], false, false, false);
+    			current = true;
+    			dispose = listen_dev(div, "click", /*click_handler_1*/ ctx[15], false, false, false);
     		},
     		p: function update(ctx, dirty) {
-    			if (dirty & /*cardComp*/ 8 && img.src !== (img_src_value = /*cardComp*/ ctx[3].image)) {
+    			if (!current || dirty & /*cardComp*/ 8 && img.src !== (img_src_value = /*cardComp*/ ctx[3].image)) {
     				attr_dev(img, "src", img_src_value);
     			}
     		},
+    		i: function intro(local) {
+    			if (current) return;
+
+    			add_render_callback(() => {
+    				if (!div_transition) div_transition = create_bidirectional_transition(div, turn, {}, true);
+    				div_transition.run(1);
+    			});
+
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			if (!div_transition) div_transition = create_bidirectional_transition(div, turn, {}, false);
+    			div_transition.run(0);
+    			current = false;
+    		},
     		d: function destroy(detaching) {
     			if (detaching) detach_dev(div);
+    			if (detaching && div_transition) div_transition.end();
     			dispose();
     		}
     	};
@@ -510,31 +794,50 @@ var app = (function () {
     		block,
     		id: create_else_block_2.name,
     		type: "else",
-    		source: "(63:3) {:else}",
+    		source: "(86:3) {:else}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (60:3) {#if !companyCard}
+    // (83:3) {#if !companyCard}
     function create_if_block_2(ctx) {
     	let div;
+    	let div_transition;
+    	let current;
     	let dispose;
 
     	const block = {
     		c: function create() {
     			div = element("div");
-    			attr_dev(div, "class", "face front svelte-fp05x4");
-    			add_location(div, file, 60, 4, 1184);
+    			attr_dev(div, "class", "face front svelte-1cgphth");
+    			add_location(div, file, 83, 4, 1519);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div, anchor);
-    			dispose = listen_dev(div, "click", /*click_handler*/ ctx[13], false, false, false);
+    			current = true;
+    			dispose = listen_dev(div, "click", /*click_handler*/ ctx[14], false, false, false);
     		},
     		p: noop,
+    		i: function intro(local) {
+    			if (current) return;
+
+    			add_render_callback(() => {
+    				if (!div_transition) div_transition = create_bidirectional_transition(div, turn, {}, true);
+    				div_transition.run(1);
+    			});
+
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			if (!div_transition) div_transition = create_bidirectional_transition(div, turn, {}, false);
+    			div_transition.run(0);
+    			current = false;
+    		},
     		d: function destroy(detaching) {
     			if (detaching) detach_dev(div);
+    			if (detaching && div_transition) div_transition.end();
     			dispose();
     		}
     	};
@@ -543,18 +846,20 @@ var app = (function () {
     		block,
     		id: create_if_block_2.name,
     		type: "if",
-    		source: "(60:3) {#if !companyCard}",
+    		source: "(83:3) {#if !companyCard}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (74:3) {:else}
+    // (97:3) {:else}
     function create_else_block_1(ctx) {
     	let div;
     	let img;
     	let img_src_value;
+    	let div_transition;
+    	let current;
     	let dispose;
 
     	const block = {
@@ -563,23 +868,40 @@ var app = (function () {
     			img = element("img");
     			if (img.src !== (img_src_value = /*cardTax*/ ctx[4].image)) attr_dev(img, "src", img_src_value);
     			attr_dev(img, "alt", "Skattekort");
-    			attr_dev(img, "class", "svelte-fp05x4");
-    			add_location(img, file, 75, 5, 1616);
-    			attr_dev(div, "class", "face back svelte-fp05x4");
-    			add_location(div, file, 74, 4, 1553);
+    			attr_dev(img, "class", "svelte-1cgphth");
+    			add_location(img, file, 98, 5, 2021);
+    			attr_dev(div, "class", "face back svelte-1cgphth");
+    			add_location(div, file, 97, 4, 1942);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div, anchor);
     			append_dev(div, img);
-    			dispose = listen_dev(div, "click", /*click_handler_3*/ ctx[16], false, false, false);
+    			current = true;
+    			dispose = listen_dev(div, "click", /*click_handler_3*/ ctx[17], false, false, false);
     		},
     		p: function update(ctx, dirty) {
-    			if (dirty & /*cardTax*/ 16 && img.src !== (img_src_value = /*cardTax*/ ctx[4].image)) {
+    			if (!current || dirty & /*cardTax*/ 16 && img.src !== (img_src_value = /*cardTax*/ ctx[4].image)) {
     				attr_dev(img, "src", img_src_value);
     			}
     		},
+    		i: function intro(local) {
+    			if (current) return;
+
+    			add_render_callback(() => {
+    				if (!div_transition) div_transition = create_bidirectional_transition(div, turn, {}, true);
+    				div_transition.run(1);
+    			});
+
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			if (!div_transition) div_transition = create_bidirectional_transition(div, turn, {}, false);
+    			div_transition.run(0);
+    			current = false;
+    		},
     		d: function destroy(detaching) {
     			if (detaching) detach_dev(div);
+    			if (detaching && div_transition) div_transition.end();
     			dispose();
     		}
     	};
@@ -588,31 +910,50 @@ var app = (function () {
     		block,
     		id: create_else_block_1.name,
     		type: "else",
-    		source: "(74:3) {:else}",
+    		source: "(97:3) {:else}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (71:3) {#if !taxCard}
+    // (94:3) {#if !taxCard}
     function create_if_block_1(ctx) {
     	let div;
+    	let div_transition;
+    	let current;
     	let dispose;
 
     	const block = {
     		c: function create() {
     			div = element("div");
-    			attr_dev(div, "class", "face front svelte-fp05x4");
-    			add_location(div, file, 71, 4, 1469);
+    			attr_dev(div, "class", "face front svelte-1cgphth");
+    			add_location(div, file, 94, 4, 1842);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div, anchor);
-    			dispose = listen_dev(div, "click", /*click_handler_2*/ ctx[15], false, false, false);
+    			current = true;
+    			dispose = listen_dev(div, "click", /*click_handler_2*/ ctx[16], false, false, false);
     		},
     		p: noop,
+    		i: function intro(local) {
+    			if (current) return;
+
+    			add_render_callback(() => {
+    				if (!div_transition) div_transition = create_bidirectional_transition(div, turn, {}, true);
+    				div_transition.run(1);
+    			});
+
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			if (!div_transition) div_transition = create_bidirectional_transition(div, turn, {}, false);
+    			div_transition.run(0);
+    			current = false;
+    		},
     		d: function destroy(detaching) {
     			if (detaching) detach_dev(div);
+    			if (detaching && div_transition) div_transition.end();
     			dispose();
     		}
     	};
@@ -621,18 +962,20 @@ var app = (function () {
     		block,
     		id: create_if_block_1.name,
     		type: "if",
-    		source: "(71:3) {#if !taxCard}",
+    		source: "(94:3) {#if !taxCard}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (85:3) {:else}
+    // (108:3) {:else}
     function create_else_block(ctx) {
     	let div;
     	let img;
     	let img_src_value;
+    	let div_transition;
+    	let current;
     	let dispose;
 
     	const block = {
@@ -641,23 +984,40 @@ var app = (function () {
     			img = element("img");
     			if (img.src !== (img_src_value = /*cardSabo*/ ctx[5].image)) attr_dev(img, "src", img_src_value);
     			attr_dev(img, "alt", "Sabotasjekort");
-    			attr_dev(img, "class", "svelte-fp05x4");
-    			add_location(img, file, 86, 5, 1897);
-    			attr_dev(div, "class", "face back svelte-fp05x4");
-    			add_location(div, file, 85, 4, 1833);
+    			attr_dev(img, "class", "svelte-1cgphth");
+    			add_location(img, file, 109, 5, 2340);
+    			attr_dev(div, "class", "face back svelte-1cgphth");
+    			add_location(div, file, 108, 4, 2260);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div, anchor);
     			append_dev(div, img);
-    			dispose = listen_dev(div, "click", /*click_handler_5*/ ctx[18], false, false, false);
+    			current = true;
+    			dispose = listen_dev(div, "click", /*click_handler_5*/ ctx[19], false, false, false);
     		},
     		p: function update(ctx, dirty) {
-    			if (dirty & /*cardSabo*/ 32 && img.src !== (img_src_value = /*cardSabo*/ ctx[5].image)) {
+    			if (!current || dirty & /*cardSabo*/ 32 && img.src !== (img_src_value = /*cardSabo*/ ctx[5].image)) {
     				attr_dev(img, "src", img_src_value);
     			}
     		},
+    		i: function intro(local) {
+    			if (current) return;
+
+    			add_render_callback(() => {
+    				if (!div_transition) div_transition = create_bidirectional_transition(div, turn, {}, true);
+    				div_transition.run(1);
+    			});
+
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			if (!div_transition) div_transition = create_bidirectional_transition(div, turn, {}, false);
+    			div_transition.run(0);
+    			current = false;
+    		},
     		d: function destroy(detaching) {
     			if (detaching) detach_dev(div);
+    			if (detaching && div_transition) div_transition.end();
     			dispose();
     		}
     	};
@@ -666,31 +1026,50 @@ var app = (function () {
     		block,
     		id: create_else_block.name,
     		type: "else",
-    		source: "(85:3) {:else}",
+    		source: "(108:3) {:else}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (82:3) {#if !saboCard}
+    // (105:3) {#if !saboCard}
     function create_if_block(ctx) {
     	let div;
+    	let div_transition;
+    	let current;
     	let dispose;
 
     	const block = {
     		c: function create() {
     			div = element("div");
-    			attr_dev(div, "class", "face front svelte-fp05x4");
-    			add_location(div, file, 82, 4, 1748);
+    			attr_dev(div, "class", "face front svelte-1cgphth");
+    			add_location(div, file, 105, 4, 2159);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div, anchor);
-    			dispose = listen_dev(div, "click", /*click_handler_4*/ ctx[17], false, false, false);
+    			current = true;
+    			dispose = listen_dev(div, "click", /*click_handler_4*/ ctx[18], false, false, false);
     		},
     		p: noop,
+    		i: function intro(local) {
+    			if (current) return;
+
+    			add_render_callback(() => {
+    				if (!div_transition) div_transition = create_bidirectional_transition(div, turn, {}, true);
+    				div_transition.run(1);
+    			});
+
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			if (!div_transition) div_transition = create_bidirectional_transition(div, turn, {}, false);
+    			div_transition.run(0);
+    			current = false;
+    		},
     		d: function destroy(detaching) {
     			if (detaching) detach_dev(div);
+    			if (detaching && div_transition) div_transition.end();
     			dispose();
     		}
     	};
@@ -699,7 +1078,7 @@ var app = (function () {
     		block,
     		id: create_if_block.name,
     		type: "if",
-    		source: "(82:3) {#if !saboCard}",
+    		source: "(105:3) {#if !saboCard}",
     		ctx
     	});
 
@@ -716,34 +1095,47 @@ var app = (function () {
     	let t2;
     	let div4;
     	let div1;
+    	let current_block_type_index;
+    	let if_block0;
     	let t3;
     	let div2;
+    	let current_block_type_index_1;
+    	let if_block1;
     	let t4;
     	let div3;
+    	let current_block_type_index_2;
+    	let if_block2;
+    	let current;
+    	const if_block_creators = [create_if_block_2, create_else_block_2];
+    	const if_blocks = [];
 
     	function select_block_type(ctx, dirty) {
-    		if (!/*companyCard*/ ctx[0]) return create_if_block_2;
-    		return create_else_block_2;
+    		if (!/*companyCard*/ ctx[0]) return 0;
+    		return 1;
     	}
 
-    	let current_block_type = select_block_type(ctx);
-    	let if_block0 = current_block_type(ctx);
+    	current_block_type_index = select_block_type(ctx);
+    	if_block0 = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
+    	const if_block_creators_1 = [create_if_block_1, create_else_block_1];
+    	const if_blocks_1 = [];
 
     	function select_block_type_1(ctx, dirty) {
-    		if (!/*taxCard*/ ctx[1]) return create_if_block_1;
-    		return create_else_block_1;
+    		if (!/*taxCard*/ ctx[1]) return 0;
+    		return 1;
     	}
 
-    	let current_block_type_1 = select_block_type_1(ctx);
-    	let if_block1 = current_block_type_1(ctx);
+    	current_block_type_index_1 = select_block_type_1(ctx);
+    	if_block1 = if_blocks_1[current_block_type_index_1] = if_block_creators_1[current_block_type_index_1](ctx);
+    	const if_block_creators_2 = [create_if_block, create_else_block];
+    	const if_blocks_2 = [];
 
     	function select_block_type_2(ctx, dirty) {
-    		if (!/*saboCard*/ ctx[2]) return create_if_block;
-    		return create_else_block;
+    		if (!/*saboCard*/ ctx[2]) return 0;
+    		return 1;
     	}
 
-    	let current_block_type_2 = select_block_type_2(ctx);
-    	let if_block2 = current_block_type_2(ctx);
+    	current_block_type_index_2 = select_block_type_2(ctx);
+    	if_block2 = if_blocks_2[current_block_type_index_2] = if_block_creators_2[current_block_type_index_2](ctx);
 
     	const block = {
     		c: function create() {
@@ -765,23 +1157,26 @@ var app = (function () {
     			if_block2.c();
     			if (img.src !== (img_src_value = "./img/logo.png")) attr_dev(img, "src", img_src_value);
     			attr_dev(img, "alt", "logo");
-    			attr_dev(img, "class", "svelte-fp05x4");
-    			add_location(img, file, 52, 2, 980);
-    			attr_dev(p, "class", "svelte-fp05x4");
-    			add_location(p, file, 53, 2, 1020);
+    			attr_dev(img, "class", "svelte-1cgphth");
+    			add_location(img, file, 75, 2, 1309);
+    			attr_dev(p, "class", "svelte-1cgphth");
+    			add_location(p, file, 76, 2, 1349);
     			attr_dev(div0, "id", "logo");
-    			attr_dev(div0, "class", "svelte-fp05x4");
-    			add_location(div0, file, 51, 1, 962);
-    			attr_dev(div1, "class", "card company flipped svelte-fp05x4");
-    			add_location(div1, file, 58, 2, 1123);
-    			attr_dev(div2, "class", "card tax flipped svelte-fp05x4");
-    			add_location(div2, file, 69, 2, 1416);
-    			attr_dev(div3, "class", "card sabo flipped svelte-fp05x4");
-    			add_location(div3, file, 80, 2, 1693);
-    			attr_dev(div4, "class", "container svelte-fp05x4");
-    			add_location(div4, file, 56, 1, 1096);
-    			attr_dev(main, "class", "svelte-fp05x4");
-    			add_location(main, file, 50, 0, 954);
+    			attr_dev(div0, "class", "svelte-1cgphth");
+    			add_location(div0, file, 74, 1, 1291);
+    			attr_dev(div1, "class", "card company svelte-1cgphth");
+    			toggle_class(div1, "flipped", /*flipped*/ ctx[6]);
+    			add_location(div1, file, 81, 2, 1452);
+    			attr_dev(div2, "class", "card tax svelte-1cgphth");
+    			toggle_class(div2, "flipped", /*flipped*/ ctx[6]);
+    			add_location(div2, file, 92, 2, 1783);
+    			attr_dev(div3, "class", "card sabo svelte-1cgphth");
+    			toggle_class(div3, "flipped", /*flipped*/ ctx[6]);
+    			add_location(div3, file, 103, 2, 2098);
+    			attr_dev(div4, "class", "container svelte-1cgphth");
+    			add_location(div4, file, 79, 1, 1425);
+    			attr_dev(main, "class", "svelte-1cgphth");
+    			add_location(main, file, 73, 0, 1283);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -795,58 +1190,118 @@ var app = (function () {
     			append_dev(main, t2);
     			append_dev(main, div4);
     			append_dev(div4, div1);
-    			if_block0.m(div1, null);
+    			if_blocks[current_block_type_index].m(div1, null);
     			append_dev(div4, t3);
     			append_dev(div4, div2);
-    			if_block1.m(div2, null);
+    			if_blocks_1[current_block_type_index_1].m(div2, null);
     			append_dev(div4, t4);
     			append_dev(div4, div3);
-    			if_block2.m(div3, null);
+    			if_blocks_2[current_block_type_index_2].m(div3, null);
+    			current = true;
     		},
     		p: function update(ctx, [dirty]) {
-    			if (current_block_type === (current_block_type = select_block_type(ctx)) && if_block0) {
-    				if_block0.p(ctx, dirty);
-    			} else {
-    				if_block0.d(1);
-    				if_block0 = current_block_type(ctx);
+    			let previous_block_index = current_block_type_index;
+    			current_block_type_index = select_block_type(ctx);
 
-    				if (if_block0) {
+    			if (current_block_type_index === previous_block_index) {
+    				if_blocks[current_block_type_index].p(ctx, dirty);
+    			} else {
+    				group_outros();
+
+    				transition_out(if_blocks[previous_block_index], 1, 1, () => {
+    					if_blocks[previous_block_index] = null;
+    				});
+
+    				check_outros();
+    				if_block0 = if_blocks[current_block_type_index];
+
+    				if (!if_block0) {
+    					if_block0 = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
     					if_block0.c();
-    					if_block0.m(div1, null);
     				}
+
+    				transition_in(if_block0, 1);
+    				if_block0.m(div1, null);
     			}
 
-    			if (current_block_type_1 === (current_block_type_1 = select_block_type_1(ctx)) && if_block1) {
-    				if_block1.p(ctx, dirty);
-    			} else {
-    				if_block1.d(1);
-    				if_block1 = current_block_type_1(ctx);
+    			if (dirty & /*flipped*/ 64) {
+    				toggle_class(div1, "flipped", /*flipped*/ ctx[6]);
+    			}
 
-    				if (if_block1) {
+    			let previous_block_index_1 = current_block_type_index_1;
+    			current_block_type_index_1 = select_block_type_1(ctx);
+
+    			if (current_block_type_index_1 === previous_block_index_1) {
+    				if_blocks_1[current_block_type_index_1].p(ctx, dirty);
+    			} else {
+    				group_outros();
+
+    				transition_out(if_blocks_1[previous_block_index_1], 1, 1, () => {
+    					if_blocks_1[previous_block_index_1] = null;
+    				});
+
+    				check_outros();
+    				if_block1 = if_blocks_1[current_block_type_index_1];
+
+    				if (!if_block1) {
+    					if_block1 = if_blocks_1[current_block_type_index_1] = if_block_creators_1[current_block_type_index_1](ctx);
     					if_block1.c();
-    					if_block1.m(div2, null);
     				}
+
+    				transition_in(if_block1, 1);
+    				if_block1.m(div2, null);
     			}
 
-    			if (current_block_type_2 === (current_block_type_2 = select_block_type_2(ctx)) && if_block2) {
-    				if_block2.p(ctx, dirty);
-    			} else {
-    				if_block2.d(1);
-    				if_block2 = current_block_type_2(ctx);
+    			if (dirty & /*flipped*/ 64) {
+    				toggle_class(div2, "flipped", /*flipped*/ ctx[6]);
+    			}
 
-    				if (if_block2) {
+    			let previous_block_index_2 = current_block_type_index_2;
+    			current_block_type_index_2 = select_block_type_2(ctx);
+
+    			if (current_block_type_index_2 === previous_block_index_2) {
+    				if_blocks_2[current_block_type_index_2].p(ctx, dirty);
+    			} else {
+    				group_outros();
+
+    				transition_out(if_blocks_2[previous_block_index_2], 1, 1, () => {
+    					if_blocks_2[previous_block_index_2] = null;
+    				});
+
+    				check_outros();
+    				if_block2 = if_blocks_2[current_block_type_index_2];
+
+    				if (!if_block2) {
+    					if_block2 = if_blocks_2[current_block_type_index_2] = if_block_creators_2[current_block_type_index_2](ctx);
     					if_block2.c();
-    					if_block2.m(div3, null);
     				}
+
+    				transition_in(if_block2, 1);
+    				if_block2.m(div3, null);
+    			}
+
+    			if (dirty & /*flipped*/ 64) {
+    				toggle_class(div3, "flipped", /*flipped*/ ctx[6]);
     			}
     		},
-    		i: noop,
-    		o: noop,
+    		i: function intro(local) {
+    			if (current) return;
+    			transition_in(if_block0);
+    			transition_in(if_block1);
+    			transition_in(if_block2);
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			transition_out(if_block0);
+    			transition_out(if_block1);
+    			transition_out(if_block2);
+    			current = false;
+    		},
     		d: function destroy(detaching) {
     			if (detaching) detach_dev(main);
-    			if_block0.d();
-    			if_block1.d();
-    			if_block2.d();
+    			if_blocks[current_block_type_index].d();
+    			if_blocks_1[current_block_type_index_1].d();
+    			if_blocks_2[current_block_type_index_2].d();
     		}
     	};
 
@@ -861,42 +1316,64 @@ var app = (function () {
     	return block;
     }
 
-    function instance($$self, $$props, $$invalidate) {
-    	let companyCard = false;
-    	let taxCard = false;
-    	let saboCard = false;
-    	let cardComp = 0;
-    	let cardTax = 0;
-    	let cardSabo = 0;
-    	let flipCard;
+    function turn(node, { delay = 0, duration = 500 }) {
+    	return {
+    		delay,
+    		duration,
+    		css: (t, u) => `
+					transform: rotateY(${1 - u * 180}deg);
+					backface-visibility: hidden;
+				`
+    	};
+    }
 
-    	//bør man ha -1 bak .length?
+    function instance($$self, $$props, $$invalidate) {
+    	let companyCard;
+    	let taxCard;
+    	let saboCard;
+    	let cardComp;
+    	let cardTax;
+    	let cardSabo;
+
     	const pickCompCard = () => {
-    		let randomCompCard = Math.round(Math.random() * compList.length);
+    		let randomCompCard = Math.round(Math.random() * (compList.length - 1));
     		$$invalidate(3, cardComp = compList[randomCompCard]);
     	};
 
     	const pickTaxCard = () => {
-    		let randomTaxCard = Math.round(Math.random() * taxList.length);
+    		let randomTaxCard = Math.round(Math.random() * (taxList.length - 1));
     		$$invalidate(4, cardTax = taxList[randomTaxCard]);
     	};
 
     	const pickSaboCard = () => {
-    		let randomSaboCard = Math.round(Math.random() * saboList.length);
+    		let randomSaboCard = Math.round(Math.random() * (saboList.length - 1));
     		$$invalidate(5, cardSabo = saboList[randomSaboCard]);
     	};
 
     	const pushCompCards = () => {
-    		if ($$invalidate(0, companyCard = true)) pickCompCard();
+    		if ($$invalidate(0, companyCard = true)) {
+    			pickCompCard();
+    		}
     	};
 
     	const pushTaxCards = () => {
-    		if ($$invalidate(1, taxCard = true)) pickTaxCard();
+    		if ($$invalidate(1, taxCard = true)) {
+    			pickTaxCard();
+    		}
     	};
 
     	const pushSaboCards = () => {
-    		if ($$invalidate(2, saboCard = true)) pickSaboCard();
+    		if ($$invalidate(2, saboCard = true)) {
+    			pickSaboCard();
+    		}
     	};
+
+    	////// FLIP TRANSITION //////
+    	let flipped = false;
+
+    	function flip() {
+    		$$invalidate(6, flipped = !flipped);
+    	}
 
     	const click_handler = () => pushCompCards();
     	const click_handler_1 = () => $$invalidate(0, companyCard = false);
@@ -909,19 +1386,22 @@ var app = (function () {
     		compList,
     		taxList,
     		saboList,
+    		fly,
     		companyCard,
     		taxCard,
     		saboCard,
     		cardComp,
     		cardTax,
     		cardSabo,
-    		flipCard,
     		pickCompCard,
     		pickTaxCard,
     		pickSaboCard,
     		pushCompCards,
     		pushTaxCards,
     		pushSaboCards,
+    		flipped,
+    		turn,
+    		flip,
     		Math
     	});
 
@@ -932,7 +1412,7 @@ var app = (function () {
     		if ("cardComp" in $$props) $$invalidate(3, cardComp = $$props.cardComp);
     		if ("cardTax" in $$props) $$invalidate(4, cardTax = $$props.cardTax);
     		if ("cardSabo" in $$props) $$invalidate(5, cardSabo = $$props.cardSabo);
-    		if ("flipCard" in $$props) flipCard = $$props.flipCard;
+    		if ("flipped" in $$props) $$invalidate(6, flipped = $$props.flipped);
     	};
 
     	if ($$props && "$$inject" in $$props) {
@@ -946,10 +1426,11 @@ var app = (function () {
     		cardComp,
     		cardTax,
     		cardSabo,
+    		flipped,
     		pushCompCards,
     		pushTaxCards,
     		pushSaboCards,
-    		flipCard,
+    		flip,
     		pickCompCard,
     		pickTaxCard,
     		pickSaboCard,
@@ -965,7 +1446,7 @@ var app = (function () {
     class App extends SvelteComponentDev {
     	constructor(options) {
     		super(options);
-    		init(this, options, instance, create_fragment, safe_not_equal, {});
+    		init(this, options, instance, create_fragment, safe_not_equal, { flip: 10 });
 
     		dispatch_dev("SvelteRegisterComponent", {
     			component: this,
@@ -973,6 +1454,14 @@ var app = (function () {
     			options,
     			id: create_fragment.name
     		});
+    	}
+
+    	get flip() {
+    		return this.$$.ctx[10];
+    	}
+
+    	set flip(value) {
+    		throw new Error("<App>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
     	}
     }
 

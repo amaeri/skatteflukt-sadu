@@ -3,48 +3,71 @@
 	import taxList from "./taxcards.js"
 	import saboList from "./sabocards.js"
 
-	let companyCard = false
-	let taxCard = false
-	let saboCard = false
+	import { fly } from "svelte/transition"
 
-	let cardComp = 0
-	let cardTax = 0
-	let cardSabo = 0
+	let companyCard
+	let taxCard
+	let saboCard
 
-	let flipCard
+	let cardComp
+	let cardTax
+	let cardSabo
 
-	//bør man ha -1 bak .length?
 
 	const pickCompCard = () => {
-		let randomCompCard = Math.round(Math.random() * (compList.length))
+		let randomCompCard = Math.round(Math.random() * (compList.length - 1))
 		cardComp = compList[randomCompCard]
 	}
 
 	const pickTaxCard = () => {
-		let randomTaxCard = Math.round(Math.random() * (taxList.length))
+		let randomTaxCard = Math.round(Math.random() * (taxList.length - 1))
 		cardTax = taxList[randomTaxCard]
 	}
 
 	const pickSaboCard = () => {
-		let randomSaboCard = Math.round(Math.random() * (saboList.length))
+		let randomSaboCard = Math.round(Math.random() * (saboList.length - 1))
 		cardSabo = saboList[randomSaboCard]
 	}
 
 	const pushCompCards = () => {
-		if (companyCard = true)
+		if (companyCard = true) {
 			pickCompCard()
+		}
 	}
 
 	const pushTaxCards = () => {
-		if (taxCard = true)
+		if (taxCard = true) {
 			pickTaxCard()
+		}
 	}
 
 	const pushSaboCards = () => {
-		if (saboCard = true)
+		if (saboCard = true) {
 			pickSaboCard()
+		}
 	}
 
+	////// FLIP TRANSITION //////
+	let flipped = false
+		
+		function turn(node, {
+			delay = 0,
+			duration = 500
+		}) {
+			return {
+				delay,
+				duration,
+				css: (t, u) => `
+					transform: rotateY(${1 - (u * 180)}deg);
+					backface-visibility: hidden;
+				`
+			};
+	}
+	
+	export function flip () {
+		flipped = !flipped
+	}
+	////////////
 
 </script>
 
@@ -56,34 +79,34 @@
 
 	<div class="container">
 
-		<div class="card company flipped">
+		<div class:flipped class="card company">
 			{#if !companyCard}
-				<div class="face front" on:click={ () => pushCompCards()}>
+				<div class="face front" on:click={ () => pushCompCards()} transition:turn>
 				</div>
 			{:else}
-				<div class="face back" on:click={ () => companyCard = false}>
+				<div class="face back" on:click={ () => companyCard = false} transition:turn>
 					<img src="{cardComp.image}" alt="Bedriftskort">
 				</div>
 			{/if}
 		</div>
 
-		<div class="card tax flipped">
+		<div class:flipped class="card tax">
 			{#if !taxCard}
-				<div class="face front" on:click={ () => pushTaxCards()}>
+				<div class="face front" on:click={ () => pushTaxCards()} transition:turn>
 				</div>
 			{:else}
-				<div class="face back" on:click={ () => taxCard = false}>
+				<div class="face back" on:click={ () => taxCard = false} transition:turn>
 					<img src="{cardTax.image}" alt="Skattekort">
 				</div>
 			{/if}
 		</div>
 
-		<div class="card sabo flipped">
+		<div class:flipped class="card sabo">
 			{#if !saboCard}
-				<div class="face front" on:click={ () => pushSaboCards()}>
+				<div class="face front" on:click={ () => pushSaboCards()} transition:turn>
 				</div>
 			{:else}
-				<div class="face back" on:click={ () => saboCard = false}>
+				<div class="face back" on:click={ () => saboCard = false} transition:turn>
 					<img src="{cardSabo.image}" alt="Sabotasjekort">
 				</div>
 			{/if}
@@ -130,7 +153,6 @@
 		place-items: center;
 		width: 900px;
 		height: 700px;
-		perspective: 1800px;
 	}
 
 	.card {
@@ -138,50 +160,36 @@
 		height: 300px;
 		cursor: pointer;
 		position: relative;
-		transition: transform 1s;
-		transform-style: preserve-3d;
+		user-select: none;
+		perspective: 600px;
 	}
 
 	.card .face {
 		position: absolute;
 		width: 100%;
 		height: 100%;
-		backface-visibility: hidden;
 	}
 
 	.card .front {
-		z-index: 1;
 		background-size: contain;
+		z-index: 1;
 	}
 
-	.card.company .front {
+	.card.company .front{
 		background-image: url("../img/bed_front.png");
 	}
 
-	.card.tax .front {
+	.card.tax .front{
 		background-image: url("../img/skatt_front.png");
 	}
 
-	.card.sabo .front {
+	.card.sabo .front{
 		background-image: url("../img/sabo_front.png");
-	}
-
-	.card .back {
-		z-index: 0;
 	}
 
 	.card .back img {
 		width: 100%;
 		height: 100%;
-	}
-
-	.card.flipped .back {
-		z-index: 2;
-		transform: rotateY( 180deg );
-	}
-
-	.card.flipped {
-		transform: rotateY(180deg);
 	}
 
 
