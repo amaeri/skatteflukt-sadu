@@ -11,7 +11,7 @@
 	let cardTax = 0
 	let cardSabo = 0
 
-	let flipped = 0
+	let flipCard
 
 	//bør man ha -1 bak .length?
 
@@ -44,6 +44,8 @@
 		if (saboCard = true)
 			pickSaboCard()
 	}
+
+
 </script>
 
 <main>
@@ -108,13 +110,17 @@
 
 	#logo {
 		position: absolute;
-		top: 3rem;
+		top: 2rem;
 		width: 100%;
 		text-align: center;
 	}
 
 	#logo img{
 		width: 450px;
+	}
+
+	#logo p {
+		padding-top: 1rem;
 	}
 
 	.container {
@@ -124,7 +130,7 @@
 		place-items: center;
 		width: 900px;
 		height: 700px;
-		perspective: 600px;
+		perspective: 1800px;
 	}
 
 	.card {
@@ -169,14 +175,14 @@
 		height: 100%;
 	}
 
-	/* .card.flipped .back {
+	.card.flipped .back {
 		z-index: 2;
 		transform: rotateY( 180deg );
 	}
 
 	.card.flipped {
 		transform: rotateY(180deg);
-	} */
+	}
 
 
 </style>
