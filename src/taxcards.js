@@ -79,13 +79,13 @@ let taxList = [{
         },{
             image: "./img/skatt_sitron4.png"
         },{
-            image: "./img/skatt_stjerne1.png"
+            image: "./img/skatt_stjernefrukt1.png"
         },{
-            image: "./img/skatt_stjerne2.png"
+            image: "./img/skatt_stjernefrukt2.png"
         },{
-            image: "./img/skatt_stjerne3.png"
+            image: "./img/skatt_stjernefrukt3.png"
         },{
-            image: "./img/skatt_stjerne4.png"
+            image: "./img/skatt_stjernefrukt4.png"
         }
     ]
 

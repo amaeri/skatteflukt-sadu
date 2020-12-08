@@ -11,39 +11,47 @@
 	let cardTax = 0
 	let cardSabo = 0
 
+	let flipped = 0
+
+	//bør man ha -1 bak .length?
+
 	const pickCompCard = () => {
-		let randomCompCard = Math.round(Math.random() * (compList.length - 1))
+		let randomCompCard = Math.round(Math.random() * (compList.length))
 		cardComp = compList[randomCompCard]
 	}
 
 	const pickTaxCard = () => {
-		let randomTaxCard = Math.round(Math.random() * (taxList.length - 1))
+		let randomTaxCard = Math.round(Math.random() * (taxList.length))
 		cardTax = taxList[randomTaxCard]
 	}
 
 	const pickSaboCard = () => {
-		let randomSaboCard = Math.round(Math.random() * (saboList.length - 1))
+		let randomSaboCard = Math.round(Math.random() * (saboList.length))
 		cardSabo = saboList[randomSaboCard]
 	}
 
 	const pushCompCards = () => {
-		if(companyCard = true)
+		if (companyCard = true)
 			pickCompCard()
 	}
 
 	const pushTaxCards = () => {
-		if(taxCard = true)
+		if (taxCard = true)
 			pickTaxCard()
 	}
 
 	const pushSaboCards = () => {
-		if(saboCard = true)
+		if (saboCard = true)
 			pickSaboCard()
 	}
-
 </script>
 
 <main>
+	<div id="logo">
+		<img src="./img/logo.png" alt="logo">
+		<p>Trykk på kortene for å åpne, trykk en gang til for å lukke</p>
+	</div>
+
 	<div class="container">
 
 		<div class="card company flipped">
@@ -87,6 +95,8 @@
 		margin: 0;
 		padding: 0;
 		box-sizing: border-box;
+		background-color: #222222;
+		color: white;
 	}
 
 	main {
@@ -96,8 +106,20 @@
 		margin: 0 auto;
 	}
 
+	#logo {
+		position: absolute;
+		top: 3rem;
+		width: 100%;
+		text-align: center;
+	}
+
+	#logo img{
+		width: 450px;
+	}
+
 	.container {
 		display: grid;
+		position: relative;
 		grid-template-columns: 1fr 1fr 1fr;
 		place-items: center;
 		width: 900px;
@@ -118,38 +140,43 @@
 		position: absolute;
 		width: 100%;
 		height: 100%;
-		background-size: contain;
 		backface-visibility: hidden;
 	}
 
-	.card .face img {
+	.card .front {
+		z-index: 1;
+		background-size: contain;
+	}
+
+	.card.company .front {
+		background-image: url("../img/bed_front.png");
+	}
+
+	.card.tax .front {
+		background-image: url("../img/skatt_front.png");
+	}
+
+	.card.sabo .front {
+		background-image: url("../img/sabo_front.png");
+	}
+
+	.card .back {
+		z-index: 0;
+	}
+
+	.card .back img {
 		width: 100%;
 		height: 100%;
 	}
 
-	.card .face.front {
-		z-index: 1;
-	}
-
-	/* .card .face.back {
-		transform: rotateY(180deg);
-		z-index: 0;
+	/* .card.flipped .back {
+		z-index: 2;
+		transform: rotateY( 180deg );
 	}
 
 	.card.flipped {
 		transform: rotateY(180deg);
 	} */
 
-	.company .front {
-		background-image: url("../img/bed_front.png");
-	}
-
-	.tax .front {
-		background-image: url("../img/skatt_front.png");
-	}
-
-	.sabo .front {
-		background-image: url("../img/sabo_front.png");
-	}
 
 </style>
