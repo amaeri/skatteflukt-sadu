@@ -121,6 +121,8 @@
 		place-items: center;
 		text-align: center;
 		margin: 0 auto;
+		width: 100%;
+		height: 100%;
 	}
 
 	#logo {
@@ -131,7 +133,7 @@
 	}
 
 	#logo img{
-		width: 450px;
+		width: 45%;
 	}
 
 	#logo p {
@@ -143,14 +145,15 @@
 		position: relative;
 		grid-template-columns: 1fr 1fr 1fr;
 		place-items: center;
-		width: 900px;
-		height: 700px;
+		width: 55rem;
+		height: 44rem;
+		padding-top: 2rem;
 		/* perspective: 800px; */
 	}
 
 	.card {
-		width: 200px;
-		height: 300px;
+		width: 14rem;
+		height: 21rem;
 		cursor: pointer;
 		position: relative;
 		user-select: none;
@@ -165,7 +168,7 @@
 	}
 
 	.card .front {
-		background-size: contain;
+		background-size: cover;
 		z-index: 1;
 	}
 

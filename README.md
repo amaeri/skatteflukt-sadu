@@ -1,23 +1,19 @@
-# Electron Forge + Svelte  Starter
+# Skattejaget
 
-Get up and running with 💪 Svelte & ⚡ Electron. 
+## Målet med spillet
 
-## Usage
+I “Skattejaget” fungerer du som Statsoverhode og skal bygge opp et velfungerende velferdssamfunn.
 
-```
-git clone https://github.com/codediodeio/electron-forge-svelte.git my-app
-cd my-app
+For å vinne spillet må du samle opp 3 forskjellige institusjoner, en fra hver prisklasse, og komme deg tilbake til samfunnet ditt før noen av de andre medspillerne “setter kjeppene i hjulene” for deg! 
 
-npm install
-npm start
-```
+## Oppsett
 
-![svelte electron](https://firebasestorage.googleapis.com/v0/b/fireship-app.appspot.com/o/assets%2Felectron-svelte-hello.png?alt=media&token=0d3ecb24-3024-4358-ac26-7676b3e60fa1)
+1.Last ned “Skattejaget”-appen i App Store eller Google Play for å få tilgang til spillekortene.
 
-## Notes
+2.Alle spillere starter i hvert sitt samfunn og velger farge.
 
-- src/index.js - Main electron process. 
-- src/svelte.js - Svelte app entrypoint. 
+3.Førstemann til å starte spillet er den som får høyet tall ved å kaste terningen, eller rett og slett gå rett på sak og spør i plenum “Hvem har snyltet på noen sist?”.
 
-Setup [Electron with Svelte](https://fireship.io/snippets/svelte-electron-setup) from scratch. 
-Build cool projects with [Electron](https://fireship.io/tags/electron). 
+4.Alle spillere kan gå opp, ned, til høyre eller til venstre, så lenge stien ikke viser annet. Husk at alle spillere med fullt opp med institusjoner må tilbake til samfunnet sitt for å vinne!
+
+5.Spillekortene i “$kattejaget”-appen vil forklare hva en må gjøre underveis når man havner på de forskjellige feltene, så spillet læres underveis og kan settes i gang med en gang!

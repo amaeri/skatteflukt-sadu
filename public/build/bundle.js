@@ -545,51 +545,51 @@ var app = (function () {
     let compList = [{
                 image: "./img/bed_appelsin_lys.png"
             },{
-                image: "./img/bed_appelsin_dark.png"
+                image: "./img/bed_appelsin_mork.png"
             },{
                 image: "./img/bed_avokado_lys.png"
             },{
-                image: "./img/bed_avokado_dark.png"
+                image: "./img/bed_avokado_mork.png"
             },{
                 image: "./img/bed_fersken_lys.png"
             },{
-                image: "./img/bed_fersken_dark.png"
+                image: "./img/bed_fersken_mork.png"
             },{
                 image: "./img/bed_granateple_lys.png"
             },{
-                image: "./img/bed_granateple_dark.png"
+                image: "./img/bed_granateple_mork.png"
             },{
                 image: "./img/bed_jordbar_lys.png"
             },{
-                image: "./img/bed_jordbar_dark.png"
+                image: "./img/bed_jordbar_mork.png"
             },{
                 image: "./img/bed_kiwi_lys.png"
             },{
-                image: "./img/bed_kiwi_dark.png"
+                image: "./img/bed_kiwi_mork.png"
             },{
                 image: "./img/bed_kokos_lys.png"
             },{
-                image: "./img/bed_kokos_dark.png"
+                image: "./img/bed_kokos_mork.png"
             },{
                 image: "./img/bed_mango_lys.png"
             },{
-                image: "./img/bed_mango_dark.png"
+                image: "./img/bed_mango_mork.png"
             },{
                 image: "./img/bed_melon_lys.png"
             },{
-                image: "./img/bed_melon_dark.png"
+                image: "./img/bed_melon_mork.png"
             },{
                 image: "./img/bed_pare_lys.png"
             },{
-                image: "./img/bed_pare_dark.png"
+                image: "./img/bed_pare_mork.png"
             },{
                 image: "./img/bed_sitron_lys.png"
             },{
-                image: "./img/bed_sitron_dark.png"
+                image: "./img/bed_sitron_mork.png"
             },{
                 image: "./img/bed_stjernefrukt_lys.png"
             },{
-                image: "./img/bed_stjernefrukt_dark.png"
+                image: "./img/bed_stjernefrukt_mork.png"
             }
         ];
 
@@ -729,9 +729,9 @@ var app = (function () {
     			img = element("img");
     			if (img.src !== (img_src_value = /*cardComp*/ ctx[3].image)) attr_dev(img, "src", img_src_value);
     			attr_dev(img, "alt", "Bedriftskort");
-    			attr_dev(img, "class", "svelte-1f0gz4s");
+    			attr_dev(img, "class", "svelte-133g2yo");
     			add_location(img, file, 79, 5, 1582);
-    			attr_dev(div, "class", "face back svelte-1f0gz4s");
+    			attr_dev(div, "class", "face back svelte-133g2yo");
     			add_location(div, file, 78, 4, 1499);
     		},
     		m: function mount(target, anchor) {
@@ -788,7 +788,7 @@ var app = (function () {
     	const block = {
     		c: function create() {
     			div = element("div");
-    			attr_dev(div, "class", "face front svelte-1f0gz4s");
+    			attr_dev(div, "class", "face front svelte-133g2yo");
     			add_location(div, file, 75, 4, 1398);
     		},
     		m: function mount(target, anchor) {
@@ -845,9 +845,9 @@ var app = (function () {
     			img = element("img");
     			if (img.src !== (img_src_value = /*cardTax*/ ctx[4].image)) attr_dev(img, "src", img_src_value);
     			attr_dev(img, "alt", "Skattekort");
-    			attr_dev(img, "class", "svelte-1f0gz4s");
+    			attr_dev(img, "class", "svelte-133g2yo");
     			add_location(img, file, 90, 5, 1886);
-    			attr_dev(div, "class", "face back svelte-1f0gz4s");
+    			attr_dev(div, "class", "face back svelte-133g2yo");
     			add_location(div, file, 89, 4, 1807);
     		},
     		m: function mount(target, anchor) {
@@ -904,7 +904,7 @@ var app = (function () {
     	const block = {
     		c: function create() {
     			div = element("div");
-    			attr_dev(div, "class", "face front svelte-1f0gz4s");
+    			attr_dev(div, "class", "face front svelte-133g2yo");
     			add_location(div, file, 86, 4, 1707);
     		},
     		m: function mount(target, anchor) {
@@ -961,9 +961,9 @@ var app = (function () {
     			img = element("img");
     			if (img.src !== (img_src_value = /*cardSabo*/ ctx[5].image)) attr_dev(img, "src", img_src_value);
     			attr_dev(img, "alt", "Sabotasjekort");
-    			attr_dev(img, "class", "svelte-1f0gz4s");
+    			attr_dev(img, "class", "svelte-133g2yo");
     			add_location(img, file, 101, 5, 2191);
-    			attr_dev(div, "class", "face back svelte-1f0gz4s");
+    			attr_dev(div, "class", "face back svelte-133g2yo");
     			add_location(div, file, 100, 4, 2111);
     		},
     		m: function mount(target, anchor) {
@@ -1020,7 +1020,7 @@ var app = (function () {
     	const block = {
     		c: function create() {
     			div = element("div");
-    			attr_dev(div, "class", "face front svelte-1f0gz4s");
+    			attr_dev(div, "class", "face front svelte-133g2yo");
     			add_location(div, file, 97, 4, 2010);
     		},
     		m: function mount(target, anchor) {
@@ -1134,22 +1134,22 @@ var app = (function () {
     			if_block2.c();
     			if (img.src !== (img_src_value = "./img/logo.png")) attr_dev(img, "src", img_src_value);
     			attr_dev(img, "alt", "logo");
-    			attr_dev(img, "class", "svelte-1f0gz4s");
+    			attr_dev(img, "class", "svelte-133g2yo");
     			add_location(img, file, 67, 2, 1190);
-    			attr_dev(p, "class", "svelte-1f0gz4s");
+    			attr_dev(p, "class", "svelte-133g2yo");
     			add_location(p, file, 68, 2, 1230);
     			attr_dev(div0, "id", "logo");
-    			attr_dev(div0, "class", "svelte-1f0gz4s");
+    			attr_dev(div0, "class", "svelte-133g2yo");
     			add_location(div0, file, 66, 1, 1172);
-    			attr_dev(div1, "class", "card company svelte-1f0gz4s");
+    			attr_dev(div1, "class", "card company svelte-133g2yo");
     			add_location(div1, file, 73, 2, 1345);
-    			attr_dev(div2, "class", "card tax svelte-1f0gz4s");
+    			attr_dev(div2, "class", "card tax svelte-133g2yo");
     			add_location(div2, file, 84, 2, 1662);
-    			attr_dev(div3, "class", "card sabo svelte-1f0gz4s");
+    			attr_dev(div3, "class", "card sabo svelte-133g2yo");
     			add_location(div3, file, 95, 2, 1963);
-    			attr_dev(div4, "class", "container svelte-1f0gz4s");
+    			attr_dev(div4, "class", "container svelte-133g2yo");
     			add_location(div4, file, 71, 1, 1318);
-    			attr_dev(main, "class", "svelte-1f0gz4s");
+    			attr_dev(main, "class", "svelte-133g2yo");
     			add_location(main, file, 65, 0, 1164);
     		},
     		l: function claim(nodes) {

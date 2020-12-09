@@ -2,7 +2,7 @@
   "name": "skatte-jaget",
   "productName": "Skattejaget",
   "version": "1.0.0",
-  "description": "Svelte + Electron Forge",
+  "description": "Skattejaget",
   "main": "src/index.js",
   "scripts": {
     "start": "concurrently \"npm:svelte-dev\" \"electron-forge start\"",
@@ -19,7 +19,9 @@
   "license": "MIT",
   "config": {
     "forge": {
-      "packagerConfig": {},
+      "packagerConfig": {
+        "icon": "public/AppIcon.icns"
+      },
       "makers": [
         {
           "name": "@electron-forge/maker-squirrel",
