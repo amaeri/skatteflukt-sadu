@@ -3,8 +3,6 @@
 	import taxList from "./taxcards.js"
 	import saboList from "./sabocards.js"
 
-	import { fly } from "svelte/transition"
-
 	let companyCard
 	let taxCard
 	let saboCard
@@ -48,24 +46,18 @@
 	}
 
 	////// FLIP TRANSITION //////
-	let flipped = false
-		
 		function turn(node, {
 			delay = 0,
-			duration = 500
+			duration = 600
 		}) {
 			return {
 				delay,
 				duration,
 				css: (t, u) => `
-					transform: rotateY(${1 - (u * 180)}deg);
+					transform: rotateY(${(1 - u * 180)}deg);
 					backface-visibility: hidden;
 				`
 			};
-	}
-	
-	export function flip () {
-		flipped = !flipped
 	}
 	////////////
 
@@ -74,12 +66,12 @@
 <main>
 	<div id="logo">
 		<img src="./img/logo.png" alt="logo">
-		<p>Trykk på kortene for å åpne, trykk en gang til for å lukke</p>
+		<p>Trykk èn gang for å åpne et kort, trykk èn gang til for å lukke kortet</p>
 	</div>
 
 	<div class="container">
 
-		<div class:flipped class="card company">
+		<div class="card company">
 			{#if !companyCard}
 				<div class="face front" on:click={ () => pushCompCards()} transition:turn>
 				</div>
@@ -90,7 +82,7 @@
 			{/if}
 		</div>
 
-		<div class:flipped class="card tax">
+		<div class="card tax">
 			{#if !taxCard}
 				<div class="face front" on:click={ () => pushTaxCards()} transition:turn>
 				</div>
@@ -101,7 +93,7 @@
 			{/if}
 		</div>
 
-		<div class:flipped class="card sabo">
+		<div class="card sabo">
 			{#if !saboCard}
 				<div class="face front" on:click={ () => pushSaboCards()} transition:turn>
 				</div>
@@ -153,6 +145,7 @@
 		place-items: center;
 		width: 900px;
 		height: 700px;
+		/* perspective: 800px; */
 	}
 
 	.card {
@@ -161,7 +154,8 @@
 		cursor: pointer;
 		position: relative;
 		user-select: none;
-		perspective: 600px;
+		/* transition: transform 1s;
+		transform-style: preserve-3d; */
 	}
 
 	.card .face {
